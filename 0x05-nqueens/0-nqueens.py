@@ -1,58 +1,113 @@
 #!/usr/bin/python3
-""" N Queens Problem """
+"""N queens solution finder module.
+"""
 import sys
 
 
-def validate_input():
-    """ Validates the input arguments """
+solutions = []
+"""The list of possible solutions to the N queens problem.
+"""
+n = 0
+"""The size of the chessboard.
+"""
+pos = None
+"""The list of possible positions on the chessboard.
+"""
+
+
+def get_input():
+    """Retrieves and validates this program's argument.
+
+    Returns:
+        int: The size of the chessboard.
+    """
+    global n
+    n = 0
     if len(sys.argv) != 2:
         print("Usage: nqueens N")
-        exit(1)
-
-    if not sys.argv[1].isdigit():
+        sys.exit(1)
+    try:
+        n = int(sys.argv[1])
+    except Exception:
         print("N must be a number")
-        exit(1)
-
-    n = int(sys.argv[1])
-
+        sys.exit(1)
     if n < 4:
         print("N must be at least 4")
-        exit(1)
-
+        sys.exit(1)
     return n
 
 
-def generate_solutions(n, row=0, columns=None,
-                       major_diagonals=None, minor_diagonals=None):
-    """ Generates solutions to the N Queens problem """
-    if columns is None:
-        columns = []
-    if major_diagonals is None:
-        major_diagonals = []
-    if minor_diagonals is None:
-        minor_diagonals = []
+def is_attacking(pos0, pos1):
+    """Checks if the positions of two queens are in an attacking mode.
 
-    if row < n:
-        for col in range(n):
-            if (col not in columns and
-                    row + col not in major_diagonals and
-                    row - col not in minor_diagonals):
-                yield from generate_solutions(
-                    n, row + 1,
-                    columns + [col],
-                    major_diagonals + [row + col],
-                    minor_diagonals + [row - col]
-                )
+    Args:
+        pos0 (list or tuple): The first queen's position.
+        pos1 (list or tuple): The second queen's position.
+
+    Returns:
+        bool: True if the queens are in an attacking position else False.
+    """
+    if (pos0[0] == pos1[0]) or (pos0[1] == pos1[1]):
+        return True
+    return abs(pos0[0] - pos1[0]) == abs(pos0[1] - pos1[1])
+
+
+def group_exists(group):
+    """Checks if a group exists in the list of solutions.
+
+    Args:
+        group (list of integers): A group of possible positions.
+
+    Returns:
+        bool: True if it exists, otherwise False.
+    """
+    global solutions
+    for stn in solutions:
+        i = 0
+        for stn_pos in stn:
+            for grp_pos in group:
+                if stn_pos[0] == grp_pos[0] and stn_pos[1] == grp_pos[1]:
+                    i += 1
+        if i == n:
+            return True
+    return False
+
+
+def build_solution(row, group):
+    """Builds a solution for the n queens problem.
+
+    Args:
+        row (int): The current row in the chessboard.
+        group (list of lists of integers): The group of valid positions.
+    """
+    global solutions
+    global n
+    if row == n:
+        tmp0 = group.copy()
+        if not group_exists(tmp0):
+            solutions.append(tmp0)
     else:
-        yield columns
+        for col in range(n):
+            a = (row * n) + col
+            matches = zip(list([pos[a]]) * len(group), group)
+            used_positions = map(lambda x: is_attacking(x[0], x[1]), matches)
+            group.append(pos[a].copy())
+            if not any(used_positions):
+                build_solution(row + 1, group)
+            group.pop(len(group) - 1)
 
 
-def solve_nqueens(n):
-    """ Solves the N Queens problem and prints each solution """
-    for solution in generate_solutions(n):
-        print([[row, col] for row, col in enumerate(solution)])
+def get_solutions():
+    """Gets the solutions for the given chessboard size.
+    """
+    global pos, n
+    pos = list(map(lambda x: [x // n, x % n], range(n ** 2)))
+    a = 0
+    group = []
+    build_solution(a, group)
 
 
-if __name__ == "__main__":
-    n = validate_input()
-    solve_nqueens(n)
+n = get_input()
+get_solutions()
+for solution in solutions:
+    print(solution)
